@@ -10,6 +10,7 @@
 | 网易云音乐 | 去广告版 `NeteaseMusicAdBlock.plugin` | 只去广告和推广位，保留云贝、动态等功能 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/NeteaseMusicAdBlock.plugin` |
 | 知乎 | `ZhihuAdBlock.plugin` | 去广告并精简界面 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/ZhihuAdBlock.plugin` |
 | 随手记 | `SuishoujiAdBlock.plugin` | 去广告和首页推广 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/SuishoujiAdBlock.plugin` |
+| 哔哩哔哩 | `BilibiliAdBlock.plugin` | 去广告、课堂和竖屏视频 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/BilibiliAdBlock.plugin` |
 
 网易云的两个插件选一个启用即可，不要同时开。
 
@@ -58,6 +59,19 @@
 注意：
 - 抓包用的是免广告会员账号，服务器本来就不下发自家广告，所以广告接口只验证到「被拦截」，没见过非会员的广告长什么样。非会员如果还看到广告，欢迎提 Issue。
 - 随手记大部分请求不走系统代理，抓包需要用 VPN（WireGuard）方式。
+
+## 哔哩哔哩
+
+基于哔哩哔哩 9.15.0（2026-10-19）抓包。
+
+拦截内容：
+- 首页推荐：删除会员购商品、小游戏、广告视频、动图广告、顶部轮播横幅、课堂课程和竖屏视频，保留普通视频、直播、图文和番剧
+- 竖屏流（`/x/v2/feed/index/story`）置空，竖屏模式里划不出下一条
+- 开屏广告、青少年模式弹窗、播放页开通会员横幅（沿用 FFDNS 的写法；播放页横幅的正则已适配新版不带 `?` 的请求）
+
+注意：
+- 竖屏视频是直接删除，不是改成普通播放页打开。把竖屏卡片原样改成普通视频链接时，点开会闪退（链接里的竖屏预加载参数导致），所以没有采用那种改写。
+- 交互式弹幕、链接跟踪参数等需要改 gRPC 二进制数据，纯本地规则做不了，没有处理。
 
 ## 通用注意事项
 

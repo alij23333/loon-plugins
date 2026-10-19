@@ -1,0 +1,32 @@
+#!name=B站去广告与竖屏视频
+#!desc=基于 2026-10-19 哔哩哔哩 9.15.0 实测抓包：首页推荐删除广告（会员购商品、小游戏、广告视频、动图广告）、顶部轮播横幅、课堂课程和竖屏视频，清空竖屏流；拦截开屏广告、青少年模式弹窗、播放页开通会员横幅。需开启 MITM 并信任证书。
+#!tag=去广告
+#!system=ios
+
+[Rule]
+# ---------- 强制走 TCP（QUIC 无法 MITM） ----------
+AND,((DOMAIN-SUFFIX,bilibili.com),(PROTOCOL,QUIC)),REJECT
+
+[Rewrite]
+# ---------- 首页推荐（已实测） ----------
+# 删除：带 ad_info 的广告卡（ad_web_s 会员购 / 小游戏、ad_av、ad_inline_av、ad_web_gif）、
+#       banner 顶部轮播、ketang 课堂课程、goto=vertical_av 竖屏视频
+# 保留：普通视频、大图视频、直播、图文、番剧 / 纪录片
+^https:\/\/app\.bilibili\.com\/x\/v2\/feed\/index\? response-body-json-jq 'if (.data.items | type) == "array" then .data.items |= map(select(.ad_info == null and .banner_item == null and ((.card_goto // "") | startswith("ad") | not) and ((.card_goto // "") | IN("banner", "ketang") | not) and .goto != "vertical_av")) else . end'
+# 竖屏流本体与竖屏流购物车
+^https:\/\/app\.bilibili\.com\/x\/v2\/feed\/index\/story(?:\/cart)?\? reject-dict
+
+# ---------- 开屏（沿用 FFDNS 写法，已在本次抓包上验证） ----------
+^https:\/\/app\.bilibili\.com\/x\/v2\/splash\/list\? mock-response-body data-type=text status-code=200 data="{"code":0,"message":"OK","ttl":1,"data":{"max_time":0,"min_interval":31536000,"pull_interval":31536000,"keep_ids":[],"show":[],"list":[{}],"splash_request_id":""}}"
+^https:\/\/app\.bilibili\.com\/x\/v2\/splash\/(show|event\/list2)\? response-body-json-jq '.data |= with_entries(if .key | IN("show", "event_list") then .value = [] else . end)'
+^https:\/\/app\.bilibili\.com\/x\/resource\/peak\/download reject-dict
+
+# ---------- 弹窗 / 会员推广（沿用 FFDNS 写法） ----------
+# 青少年模式弹窗（gRPC 空响应）
+^https:\/\/grpc\.biliapi\.net\/bilibili\.app\.interface\.v1\.Teenagers\/ModeStatus$ mock-response-body data-type=text data="AAAAABMKEQgCEgl0ZWVuYWdlcnMgAioA" mock-data-is-base64=true
+^https:\/\/grpc\.biliapi\.net\/bilibili\.app\.interface\.v1\.Teenagers\/ModeStatus$ response-header-add grpc-status 0
+# 播放页开通会员横幅（新版请求不带 ? 参数，正则已兼容）
+^https:\/\/api\.bilibili\.com\/pgc\/activity\/deliver\/material\/receive(?:\?|$) mock-response-body data-type=text status-code=200 data="{"code":0,"data":{"closeType":"close_win","container":[],"showTime":""},"message":"success"}"
+
+[MITM]
+hostname = app.bilibili.com, api.bilibili.com, grpc.biliapi.net

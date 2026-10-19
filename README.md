@@ -9,6 +9,7 @@
 | 网易云音乐 | **纯听歌版** `NeteaseMusicPure.plugin` | 只用来听歌，其他功能都不要 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/NeteaseMusicPure.plugin` |
 | 网易云音乐 | 去广告版 `NeteaseMusicAdBlock.plugin` | 只去广告和推广位，保留云贝、动态等功能 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/NeteaseMusicAdBlock.plugin` |
 | 知乎 | `ZhihuAdBlock.plugin` | 去广告并精简界面 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/ZhihuAdBlock.plugin` |
+| 随手记 | `SuishoujiAdBlock.plugin` | 去广告和首页推广 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/SuishoujiAdBlock.plugin` |
 
 网易云的两个插件选一个启用即可，不要同时开。
 
@@ -44,9 +45,23 @@
 - 回答页悬浮搜索词、相关搜索、圈子卡片（保留热评预览）；评论区「大家在讨论」
 - 我的页面盐选续费卡和会员入口；直答「看山」推荐气泡
 
+## 随手记
+
+基于随手记 13.2.56（2026-10-19）抓包。
+
+拦截内容：
+- 随手记自家广告引擎（`tg.feidee.com`）和第三方旺脉广告 SDK（`adwangmai.com`、`66mobi.com`）
+- 运营位：首页角标、公告、推荐、活动提示
+- 首页「记账攻略」里的会员特惠、福利推广和广告位（保留攻略文章）
+- 行为日志上报
+
+注意：
+- 抓包用的是免广告会员账号，服务器本来就不下发自家广告，所以广告接口只验证到「被拦截」，没见过非会员的广告长什么样。非会员如果还看到广告，欢迎提 Issue。
+- 随手记大部分请求不走系统代理，抓包需要用 VPN（WireGuard）方式。
+
 ## 通用注意事项
 
-- **QUIC 必须拦**：插件已内置。QUIC 流量无法被 MITM，不拦的话路径规则会全部失效。
+- **QUIC 必须拦**：所有插件已内置。QUIC 流量无法被 MITM，不拦的话路径规则会全部失效。
 - **开屏广告会预下载**：App 会在 WiFi 下提前缓存好几天的开屏广告，开启插件后已缓存的可能还会出现几天。想立刻清空就删除 App 重装，重装后先确认 Loon 插件已开启再打开 App。
 - 规则来自安卓端抓包，iOS 端接口大体一致；遇到页面异常可以提 Issue。
 

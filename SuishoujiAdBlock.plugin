@@ -1,0 +1,31 @@
+#!name=随手记去广告
+#!desc=基于 2026-10-19 随手记 13.2.56 实测抓包：拦截随手记广告引擎、第三方旺脉广告 SDK、运营位（角标 / 公告 / 推荐），删除首页「记账攻略」里的会员特惠、福利推广和广告位，屏蔽行为日志上报。需开启 MITM 并信任证书。
+#!tag=去广告
+#!system=ios
+
+[Rule]
+# ---------- 强制走 TCP（QUIC 无法 MITM） ----------
+AND,((DOMAIN-SUFFIX,feidee.net),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,feidee.com),(PROTOCOL,QUIC)),REJECT
+
+# ---------- 第三方广告 SDK（旺脉 ADX，实测启动时拉取广告配置） ----------
+DOMAIN-SUFFIX,adwangmai.com,REJECT
+# 旺脉 SDK 的上报 / 错误回传
+DOMAIN-SUFFIX,66mobi.com,REJECT
+
+# ---------- 行为日志上报 ----------
+DOMAIN,data.feidee.net,REJECT
+DOMAIN,kinglog.feidee.net,REJECT
+
+[Rewrite]
+# ---------- 随手记自家广告引擎（开屏 / 横幅 / 信息流广告位） ----------
+^https?:\/\/tg\.feidee\.com\/(?:online_ad|vis-ad-engine-ws)\/ reject-dict
+
+# ---------- 运营位：首页角标、公告、推荐、活动货架提示 ----------
+^https?:\/\/operation\.feidee\.net\/common-operation-ws\/api\/(?:operationSpace|actShelve)\/ reject-dict
+
+# ---------- 首页「记账攻略」信息流：只留文章，去掉会员特惠（type 2）、广告位（type 3）、福利推广 ----------
+^https?:\/\/yunmk\.feidee\.net\/cab-market-ws\/market\/v\d\/contents response-body-json-jq '.data |= map(select(.type == "0" and .name != "精选福利"))'
+
+[MITM]
+hostname = tg.feidee.com, operation.feidee.net, yunmk.feidee.net

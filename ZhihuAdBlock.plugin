@@ -1,0 +1,66 @@
+#!name=知乎去广告
+#!desc=基于 2026-10-19 知乎 11.10.0 实测抓包：拦开屏（预下载 + 实时 + 第三方 SDK）、首页横幅、浮层视频、话题气泡、回答底部广告；去掉回答页下滑的回答流；删除关注动态、搜索推荐里夹带的广告；精简首页顶部标签、搜索标签、回答页相关搜索与圈子卡片、评论区引流与满意度调查、我的页面会员推广、直答推荐气泡。需开启 MITM 并信任证书。
+#!tag=去广告
+#!system=ios
+
+[Rule]
+# ---------- 强制走 TCP（必需，否则 MITM 失效） ----------
+AND,((DOMAIN-SUFFIX,zhihu.com),(PROTOCOL,QUIC)),REJECT
+
+# ---------- 广告曝光 / 点击上报（sugar.zhihu.com 实测只承载广告日志） ----------
+DOMAIN,sugar.zhihu.com,REJECT
+DOMAIN-SUFFIX,tanx.com,REJECT
+
+# ---------- 开屏兜底的第三方广告 SDK（实测开屏下发了穿山甲、优量汇的配置） ----------
+DOMAIN-SUFFIX,pangolin-sdk-toutiao.com,REJECT
+DOMAIN-SUFFIX,pangolin-sdk-toutiao-b.com,REJECT
+DOMAIN-SUFFIX,gdt.qq.com,REJECT
+
+[Rewrite]
+# ---------- 商业广告接口（整体置空，已实测） ----------
+# 开屏 launch_v2（预下载）/ real_time_launch_v2（实时）/ real_time_second_floor_v2（下拉二楼）
+# 首页顶部横幅 banners_v3/app_topstory_banner、浮层视频 app_float_layer、文章角标 banners_v3/app_float_corner
+# 回答 / 文章底部广告 answer|article/{id}/bottom-v2
+^https:\/\/api\.zhihu\.com\/commercial_api\/ reject-dict
+^https:\/\/api\.zhihu\.com\/(?:fringe\/ad|ad-style-service\/) reject-dict
+# 首页弹出的话题推广气泡
+^https:\/\/api\.zhihu\.com\/content-distribution-core\/bubble\/common\/show reject-dict
+
+# ---------- 回答流（已实测） ----------
+# 点开回答后下滑出现的「下一个回答」流（含夹在其中的广告卡），以及文章页的续读流
+^https:\/\/api\.zhihu\.com\/(?:simple-)?next-render\? reject-dict
+
+# ---------- 夹在内容里的广告（只删广告条目，已实测） ----------
+# 关注页动态：推广条目的 extra.promotion 非空
+^https:\/\/api\.zhihu\.com\/moments_v3\? response-body-json-jq '.data |= map(select(((.extra.promotion // "") | length) == 0))'
+# 搜索页「猜你想搜」：去掉 type=commercial 的商业词
+^https:\/\/api\.zhihu\.com\/search\/recommend_query\/v\d\? response-body-json-jq '.recommend_queries.queries |= map(select(.type == "normal"))'
+# 搜索框轮播词：去掉带商业投放的词
+^https:\/\/api\.zhihu\.com\/search\/preset_words\? response-body-json-jq '.preset_words.words |= map(select((.ad_commercial_json // "") == ""))'
+
+# ---------- 界面精简（已实测） ----------
+# 首页顶部标签只留 关注 / 推荐 / 热榜（去掉 会员、知识、圈子、专栏、直播、同城）
+^https:\/\/api\.zhihu\.com\/root\/tab\/v\d response-body-json-jq '.tab_list |= map(select(.tab_type | IN("follow","recommend","hot")))'
+# 搜索结果标签：去掉 小说、论文、知识 等付费内容标签
+^https:\/\/api\.zhihu\.com\/search\/tabs\? response-body-json-jq '.data |= map(select(.t | IN("km_general","scholar","publication") | not))'
+# 回答 / 文章页：去掉悬浮搜索词、相关搜索、圈子卡片（保留热评预览）
+^https:\/\/api\.zhihu\.com\/(?:answers|articles)\/v\d\/\d+ response-body-json-jq 'del(.float_search_word, .third_business.related_queries, .third_business.ring)'
+# 评论区顶部「大家在讨论」引流模块
+^https:\/\/api\.zhihu\.com\/comment_v\d\/(?:answers|articles|pins)\/\d+\/list-headers response-body-json-jq 'del(.continuous_consumption_module)'
+# 我的页面：盐选会员续费卡、会员入口按钮
+^https:\/\/api\.zhihu\.com\/unlimited\/go\/my_card\/ reject-dict
+^https:\/\/api\.zhihu\.com\/people\/self$ response-body-json-jq 'del(.vip_info.entrance_new.right_button, .vip_info.entrance_v2)'
+# 知乎直答「看山」首页推荐气泡
+^https:\/\/zhida\.zhihu\.com\/ai_ingress\/buddy\/home_recommend\/ reject-dict
+
+# ---------- 沿用 FFDNS 原版（本次抓包未触发，未实测） ----------
+^https:\/\/api\.zhihu\.com\/comment_v\d\/(?:answers|articles|pins)\/\d+\/root_comment response-body-json-jq 'del(.atmosphere_voting_config)'
+^https:\/\/api\.zhihu\.com\/questions\/\d+\/feeds\? response-body-json-jq 'del(.ad_info)'
+^https:\/\/api\.zhihu\.com\/podcasts\/hub\/v\d$ response-body-json-jq 'del(.banners)'
+^https:\/\/api\.zhihu\.com\/search_v\d\? response-body-json-jq 'del(.pendant)'
+^https:\/\/api\.zhihu\.com\/(?:people\/homepage_entry_v\d$|kvip\/right\/my_card\?) reject-dict
+^https:\/\/www\.zhihu\.com\/api\/v\d\/members\/homepage_card$ reject-dict
+^https:\/\/zhida\.zhihu\.com\/ai_ingress\/(?:ai_chat\/guidance$|knowledge\/square\/) reject-dict
+
+[MITM]
+hostname = api.zhihu.com, www.zhihu.com, zhida.zhihu.com

@@ -1,0 +1,57 @@
+#!name=网易云音乐去广告
+#!desc=基于 2026-10-19 网易云 9.6.05 实测抓包整理：拦开屏（实时 + 预下载）、信息流广告、广告曝光上报与第三方监测，以及推广位。纯本地规则，需开启 MITM 并信任证书。注意：开屏广告会在 WiFi 下预下载并本地缓存（实测缓存了未来 4 天的广告），插件开启后已缓存的广告仍可能出现，直到过期；想立即清掉只能删除重装 App。
+#!tag=去广告
+#!system=ios
+
+[Rule]
+# ---------- 强制 API 走 TCP（必需） ----------
+# QUIC 无法 MITM，不拦的话下面所有 [Rewrite] 会静默失效
+AND,((DOMAIN-SUFFIX,music.163.com),(PROTOCOL,QUIC)),REJECT
+
+# ---------- 广告素材 CDN（兜底） ----------
+DOMAIN,iadmat.nosdn.127.net,REJECT
+DOMAIN,iadmatapk.nosdn.127.net,REJECT
+DOMAIN,iadmusicmat.music.126.net,REJECT
+DOMAIN,iadmusicmatvideo.music.126.net,REJECT
+DOMAIN,admusicpic.music.126.net,REJECT
+# 注：实测第三方开屏素材已改由 ossgw.alicdn.com / a1.alibabausercontent.com / p*.music.126.net 下发，
+# 这些是公共 CDN，不能整域拦，所以必须靠下面的接口拦截
+
+# ---------- 广告曝光 / 点击监测 ----------
+DOMAIN,iad.service.163.org,REJECT
+# 阿里妈妈广告监测（全局生效，会顺带拦其他 App 里的 tanx 监测）
+DOMAIN-SUFFIX,tanx.com,REJECT
+
+# ---------- eapi 直连 IP 主机（绕过本地 DNS） ----------
+DOMAIN,ipv4.music.163.com,REJECT
+DOMAIN,ipv6.music.163.com,REJECT
+
+[Rewrite]
+# 路径前缀同时覆盖 /eapi /xeapi /weapi /api（实测新版大量接口已迁到 /xeapi）
+
+# ---------- 广告主接口（已实测） ----------
+# 开屏：ad/loading/current、ad/loading/get、ad/loading/bidget、ad/prefetch/select
+# 信息流：ad/flow/get、ad/get；配置：ad/materialconfig、ad/config、ad/commonconfig
+# 上报：ad/monitor/*、ad/sniffing、ad/start/info/upload、ad/device/*
+# 刻意不拦 ad/listening/*（云贝中心）、ad/power/*（打榜助力）、ad/new/yunbei/*，整段拦 /ad/ 会把这些功能弄坏
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/ad\/(?:loading|prefetch|get|flow|materialconfig|commonconfig|config|monitor|sniffing|start|device)(?:\/|\?|$) reject-dict
+# 动态 / 笔记广场里的广告位
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/social\/event\/bff\/ad\/ reject-dict
+
+# ---------- 推广位（delivery 实测下发：收银台氛围、账号页卡板与活动 banner、会员中心开通按钮文案） ----------
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/delivery\/(?:batch-)?deliver reject-dict
+
+# ---------- 推广位（沿用 FFDNS 仓库规则，前缀扩展到 xeapi） ----------
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:moment\/tab\/info\/|side-bar\/mini-program\/music-service\/account|yunbei\/account\/entrance\/|mine\/applet\/redpoint|music\/songshare\/text\/recommend\/|resniche\/position\/play\/new\/|resniche\/tspopup\/show|resource\/comments?\/musiciansaid\/) reject-dict
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:ios\/version|mlivestream\/entrance\/playpage\/|link\/position\/show\/strategy|v1\/content\/exposure\/comment\/banner\/|activity\/bonus\/playpage\/time\/query|resource-exposure\/) reject-dict
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:search\/(?:default|chart|specialkeyword|rcmd\/keyword)|comment\/feed\/inserted|hotcomment\/collect|(?:comment\/)?tips\/v\d\/get|vipcenter\/tspopup\/get|zone\/songplay\/entry\/get|my\/podcast\/tab\/recommend) reject-dict
+
+# 已知拦不到的部分：
+# 1. /eapi/batch 把多个接口打包在一个加密请求体里（实测含 ad/config、delivery/batch-deliver、侧边栏推广等），
+#    Loon 无法按请求体匹配，整体拦会连带用户信息与设置一起坏，所以不拦
+# 2. /eapi/link/position/show/resource 用加密请求体里的 positionCode 区分推广位（侧边栏、云贝弹窗、商城 banner 等），
+#    但同一个接口也负责底部 tab 和「动态」页的关注/推荐 tab，所以不能整体拦
+# 3. 仓库原有的 user/sub/artist 规则已删除：新版里它也会匹配到 user/sub/artist/exist（关注按钮状态）
+
+[MITM]
+hostname = interface*.music.163.com

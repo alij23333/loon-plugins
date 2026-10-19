@@ -1,0 +1,62 @@
+#!name=网易云音乐纯听歌
+#!desc=激进版：只保留听歌（播放 / 歌单 / 搜索 / 每日推荐 / 歌词 / 评论 / 会员身份与音质），其余广告、推广、云贝、商城、动态、直播、演出、会员营销、弹窗与数据上报全部拦截。基于 2026-10-19 网易云 9.6.05 实测抓包。需开启 MITM 并信任证书。开屏广告会在 WiFi 下预下载并缓存数天，开启后想立刻清干净需删除重装 App。
+#!tag=去广告
+#!system=ios
+
+[Rule]
+# ---------- 强制 API 走 TCP（必需，否则 MITM 失效） ----------
+AND,((DOMAIN-SUFFIX,music.163.com),(PROTOCOL,QUIC)),REJECT
+
+# ---------- 广告素材 / 监测 ----------
+DOMAIN,iadmat.nosdn.127.net,REJECT
+DOMAIN,iadmatapk.nosdn.127.net,REJECT
+DOMAIN,iadmusicmat.music.126.net,REJECT
+DOMAIN,iadmusicmatvideo.music.126.net,REJECT
+DOMAIN,admusicpic.music.126.net,REJECT
+DOMAIN,iad.service.163.org,REJECT
+DOMAIN-SUFFIX,tanx.com,REJECT
+
+# ---------- 数据上报 / 性能监控 ----------
+DOMAIN,clientlogsf.music.163.com,REJECT
+DOMAIN,clientlogdep.music.163.com,REJECT
+DOMAIN,clientlogusf.music.163.com,REJECT
+DOMAIN,clientlog.music.163.com,REJECT
+DOMAIN,netapm.music.163.com,REJECT
+DOMAIN,da.dun.163.com,REJECT
+
+# ---------- 直播 ----------
+DOMAIN,api.look.163.com,REJECT
+
+# ---------- eapi 直连 IP 主机 ----------
+DOMAIN,ipv4.music.163.com,REJECT
+DOMAIN,ipv6.music.163.com,REJECT
+
+[Rewrite]
+# 前缀 (?:x?e|we)?api 覆盖 /eapi /xeapi /weapi /api
+
+# ---------- 广告（整段，含云贝任务 / 打榜助力） ----------
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:ad|ocpc\/ad|social\/event\/bff\/ad)\/ reject-dict
+
+# ---------- 推广位 / 弹窗 / 气泡 / 红点 ----------
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:delivery\/|link\/position\/show\/|link\/scene\/show\/resource|resniche\/|resource-exposure\/|side-bar\/|homepage\/miniprogram\/|miniprogram\/|mine\/applet\/redpoint|music\/songshare\/text\/recommend\/|sp\/flow\/popup\/|user\/page\/window\/|voice\/book\/page\/rights\/pop|music\/multi\/terminal\/global\/popup\/) reject-dict
+
+# ---------- 云贝 / 积分 / 商城 / 抽奖 / 任务 ----------
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:yunbei|new\/yunbei|yunbei-center|point|pointmall|mall|aggregation\/mall|vipmall|middle\/play\/lottery|middle\/vip\/mission|usertool\/task|activity|reward)\/ reject-dict
+
+# ---------- 会员营销（不影响会员身份与音质） ----------
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:vipnewcenter|vip-center-bff|vippro|vipsale|vipcenter|vipactivity|music-vip-thoth|music-vip-open|music-vip-membership\/(?:cashier|activity)|middle\/activity|autopay|pendant)\/ reject-dict
+
+# ---------- 动态 / 笔记 / 视频 / 直播 / 演出 / 一起听 ----------
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:moment|social|event|v4\/event|mlog|mlivestream|livestream|concert|listen\/together|community|circle|creator|nmusician|expert)\/ reject-dict
+
+# ---------- 搜索热词 / 热评推广 / 评论区插入 ----------
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:search\/(?:default|chart|specialkeyword|rcmd\/keyword)|comment\/feed\/inserted|hotcomment\/collect|(?:comment\/)?tips\/v\d\/get|v1\/content\/exposure\/comment\/banner\/|zone\/songplay\/entry\/get|resource\/comments?\/musiciansaid\/) reject-dict
+
+# ---------- 上报 / 升级提示 ----------
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:feedback\/weblog|middle\/page\/exposure\/|link\/collector\/event\/report|lbs\/|ios\/version|android\/upgrade|android\/version) reject-dict
+
+# 不拦（拦了会影响听歌）：song/*、playlist/*、v3/song/detail、music-vip-membership/*/vip/info、vipauth/*、
+# privilege/*、link/page/rcmd/*（首页每日推荐）、link/home/framework/*（首页 tab 框架）、/eapi/batch、user/*、v2/resource/comments
+
+[MITM]
+hostname = interface*.music.163.com

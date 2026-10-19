@@ -1,5 +1,5 @@
 #!name=B站去广告与竖屏视频
-#!desc=基于 2026-10-19 哔哩哔哩 9.15.0 实测抓包：首页推荐删除广告（会员购商品、小游戏、广告视频、动图广告）、顶部轮播横幅、课堂课程和竖屏视频，清空竖屏流；拦截开屏广告、青少年模式弹窗、播放页开通会员横幅。需开启 MITM 并信任证书。
+#!desc=基于 2026-10-19 哔哩哔哩 9.15.0 实测抓包：首页推荐删除广告（会员购商品、小游戏、广告视频、动图广告）、顶部轮播横幅、课堂课程和竖屏视频，清空竖屏流；拦截开屏广告、青少年模式弹窗、播放页开通会员横幅；去掉播放页简介下方的广告（相关推荐会一起去掉）。需开启 MITM 并信任证书。
 #!tag=去广告
 #!system=ios
 
@@ -27,6 +27,12 @@ AND,((DOMAIN-SUFFIX,bilibili.com),(PROTOCOL,QUIC)),REJECT
 ^https:\/\/grpc\.biliapi\.net\/bilibili\.app\.interface\.v1\.Teenagers\/ModeStatus$ response-header-add grpc-status 0
 # 播放页开通会员横幅（新版请求不带 ? 参数，正则已兼容）
 ^https:\/\/api\.bilibili\.com\/pgc\/activity\/deliver\/material\/receive(?:\?|$) mock-response-body data-type=text status-code=200 data="{"code":0,"data":{"closeType":"close_win","container":[],"showTime":""},"message":"success"}"
+
+# ---------- 播放页（已实测） ----------
+# 简介和相关推荐之间的广告来自 AIRelateAsync，它同时下发相关推荐列表（gRPC 二进制，无法只删广告），
+# 整体置空后广告与相关推荐一起消失，视频、简介、评论正常
+^https:\/\/grpc\.biliapi\.net\/bilibili\.app\.viewunite\.v1\.View\/AIRelateAsync$ mock-response-body data-type=text data="AAAAAAA=" mock-data-is-base64=true
+^https:\/\/grpc\.biliapi\.net\/bilibili\.app\.viewunite\.v1\.View\/AIRelateAsync$ response-header-add grpc-status 0
 
 [MITM]
 hostname = app.bilibili.com, api.bilibili.com, grpc.biliapi.net

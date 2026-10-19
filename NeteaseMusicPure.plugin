@@ -1,5 +1,5 @@
 #!name=网易云音乐纯听歌
-#!desc=激进版：只保留听歌（播放 / 歌单 / 搜索 / 每日推荐 / 歌词 / 评论 / 会员身份与音质），其余广告、推广、云贝、商城、动态、直播、演出、会员营销、弹窗与数据上报全部拦截。基于 2026-10-19 网易云 9.6.05 实测抓包。需开启 MITM 并信任证书。开屏广告会在 WiFi 下预下载并缓存数天，开启后想立刻清干净需删除重装 App。
+#!desc=激进版：只保留听歌（播放 / 歌单 / 搜索 / 每日推荐 / 歌词 / 评论 / 会员身份与音质），其余广告、推广、云贝、商城、动态、直播、演出、播客、听书、会员营销、弹窗与数据上报全部拦截。基于 2026-10-19 网易云 9.6.05 实测抓包。需开启 MITM 并信任证书。开屏广告会在 WiFi 下预下载并缓存数天，开启后想立刻清干净需删除重装 App。
 #!tag=去广告
 #!system=ios
 
@@ -48,6 +48,9 @@ DOMAIN,ipv6.music.163.com,REJECT
 
 # ---------- 动态 / 笔记 / 视频 / 直播 / 演出 / 一起听 ----------
 ^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:moment|social|event|v4\/event|mlog|mlivestream|livestream|concert|listen\/together|community|circle|creator|nmusician|expert)\/ reject-dict
+
+# ---------- 播客 / 听书（页面内容置空；顶部的「播客」「听书」标签是 App 内置默认值，Loon 去不掉） ----------
+^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:podcast|voicebook|voice\/book|djradio|dj)\/ reject-dict
 
 # ---------- 搜索热词 / 热评推广 / 评论区插入 ----------
 ^https?:\/\/interface\d*\.music\.163\.com\/(?:x?e|we)?api\/(?:search\/(?:default|chart|specialkeyword|rcmd\/keyword)|comment\/feed\/inserted|hotcomment\/collect|(?:comment\/)?tips\/v\d\/get|v1\/content\/exposure\/comment\/banner\/|zone\/songplay\/entry\/get|resource\/comments?\/musiciansaid\/) reject-dict

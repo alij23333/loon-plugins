@@ -12,6 +12,7 @@
 | 随手记 | `SuishoujiAdBlock.plugin` | 去广告和首页推广 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/SuishoujiAdBlock.plugin` |
 | 哔哩哔哩 | `BilibiliAdBlock.plugin` | 去广告、课堂和竖屏视频 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/BilibiliAdBlock.plugin` |
 | 闲鱼 | `XianyuAdBlock.plugin` | 去开屏和首页广告 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/XianyuAdBlock.plugin` |
+| 米家 | `MijiaAdBlock.plugin` | 去开屏和商城 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/MijiaAdBlock.plugin` |
 
 网易云的两个插件选一个启用即可，不要同时开。
 
@@ -87,6 +88,21 @@
 注意：
 - 只删广告，不碰首页商品、搜索、同城、商品详情页等正常内容。商品详情页的「为你推荐」在抓包里没有广告，所以没有处理。
 - 抓包时闲鱼处于未登录状态，登录后如果出现新的广告位，欢迎提 Issue。
+
+## 米家
+
+基于米家 11.8.705（2026-10-20）抓包。
+
+拦截内容：
+- 开屏：拦截活动配置接口 `getactivityconfig`（开屏 / 活动弹窗素材来源），并把运营总开关里的启动页开关（`screenLoadSwitch`、`startSwitch`）改成 0
+- 首页轮播运营位
+- 商城：清空商城页内容，以及首页悬浮挂件、底部浮层等商城推广位
+- 有品统计上报
+
+注意：
+- 底部的「商城」tab 是 App 内置的，去不掉，点进去是空白页。
+- 米家的开屏本身按闲置时长控制，时有时无。实测重开几次都没出现，但隔一段时间再打开才能完全确认。
+- 设备控制、场景、摄像头等功能不受影响。
 
 ## 通用注意事项
 

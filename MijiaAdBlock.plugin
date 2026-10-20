@@ -1,0 +1,29 @@
+#!name=米家去广告
+#!desc=基于 2026-10-20 米家 11.8.705 实测抓包：拦截开屏 / 活动配置并关闭启动页运营开关，清空商城页内容与首页悬浮挂件、底部浮层等商城推广位，屏蔽有品统计上报。设备控制、场景、摄像头等功能不受影响。需开启 MITM 并信任证书。
+#!tag=去广告
+#!system=ios
+
+[Rule]
+# ---------- 强制走 TCP（QUIC 无法 MITM） ----------
+AND,((DOMAIN,home.mi.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN,api.mijia.tech),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN-SUFFIX,retail.mi.com),(PROTOCOL,QUIC)),REJECT
+
+# ---------- 有品 / 商城统计上报 ----------
+DOMAIN,stat.youpin.mi.com,REJECT
+
+[Rewrite]
+# ---------- 开屏 ----------
+# 运营总开关：关闭启动页 / 开屏相关开关（明文 JSON，已实测）
+^https:\/\/home\.mi\.com\/cgi-op\/api\/v1\/resource\/realtime\/manage response-body-json-jq 'if (.data | type) == "object" then .data.screenLoadSwitch = 0 | .data.startSwitch = 0 | .data.bannerLoadSwitch = 0 else . end'
+# 活动配置（开屏 / 活动弹窗素材来源，响应加密，只能整体拦截）
+^https:\/\/api\.mijia\.tech\/app\/service\/getactivityconfig reject-dict
+# 首页轮播运营位
+^https:\/\/home\.mi\.com\/cgi-op\/api\/v1\/recommendation\/carousel\/banners reject-dict
+
+# ---------- 商城（tab 入口写死在 App 内，去不掉；清空商城页内容与推广位） ----------
+^https:\/\/shop-api\.retail\.mi\.com\/mtop\/mf\/home\/mihome\/ reject-dict
+^https:\/\/shop-api\.retail\.mi\.com\/mtop\/navi\/skywheel\/ reject-dict
+
+[MITM]
+hostname = home.mi.com, api.mijia.tech, shop-api.retail.mi.com

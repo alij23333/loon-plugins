@@ -11,6 +11,7 @@
 | 知乎 | `ZhihuAdBlock.plugin` | 去广告并精简界面 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/ZhihuAdBlock.plugin` |
 | 随手记 | `SuishoujiAdBlock.plugin` | 去广告和首页推广 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/SuishoujiAdBlock.plugin` |
 | 哔哩哔哩 | `BilibiliAdBlock.plugin` | 去广告、课堂和竖屏视频 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/BilibiliAdBlock.plugin` |
+| 闲鱼 | `XianyuAdBlock.plugin` | 去开屏和首页广告 | `https://raw.githubusercontent.com/alij23333/loon-plugins/main/XianyuAdBlock.plugin` |
 
 网易云的两个插件选一个启用即可，不要同时开。
 
@@ -73,6 +74,19 @@
 注意：
 - 竖屏视频是直接删除，不是改成普通播放页打开。把竖屏卡片原样改成普通视频链接时，点开会闪退（链接里的竖屏预加载参数导致），所以没有采用那种改写。
 - 交互式弹幕、链接跟踪参数等需要改 gRPC 二进制数据，纯本地规则做不了，没有处理。
+
+## 闲鱼
+
+基于闲鱼 7.28.50（2026-10-20）抓包。
+
+拦截内容：
+- 开屏广告：实时接口 `splash.ads` 和预下载素材接口 `splash.async.ads`
+- 首页信息流里的效果广告卡（`fish_home_advertise_card_d4`），只删广告，商品卡不动
+- 广告曝光与归因上报、阿里妈妈广告监测（`tanx.com`）
+
+注意：
+- 只删广告，不碰首页商品、搜索、同城、商品详情页等正常内容。商品详情页的「为你推荐」在抓包里没有广告，所以没有处理。
+- 抓包时闲鱼处于未登录状态，登录后如果出现新的广告位，欢迎提 Issue。
 
 ## 通用注意事项
 

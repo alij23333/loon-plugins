@@ -1,0 +1,29 @@
+#!name=闲鱼去广告
+#!desc=基于 2026-10-20 闲鱼 7.28.50 实测抓包：拦截开屏广告（实时 + 预下载素材），删除首页信息流里的效果广告卡，屏蔽广告曝光与归因上报。只删广告，不动首页商品、搜索、同城、详情页等正常内容。需开启 MITM 并信任证书。
+#!tag=去广告
+#!system=ios
+
+[Rule]
+# ---------- 强制走 TCP（QUIC 无法 MITM） ----------
+AND,((DOMAIN-SUFFIX,goofish.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN,guide-acs.m.taobao.com),(PROTOCOL,QUIC)),REJECT
+
+# ---------- 阿里妈妈广告监测（开屏广告来源 mamaAd） ----------
+DOMAIN-SUFFIX,tanx.com,REJECT
+
+[Rewrite]
+# ---------- 开屏（已实测） ----------
+# splash.ads：冷启动请求开屏；splash.async.ads：按日期预下载未来几天的开屏素材
+^https?:\/\/acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlecommerce\.splash\.(?:async\.)?ads\/ reject-200
+# 首页开屏广告位（沿用 FFDNS，本次抓包未触发）
+^https:\/\/guide-acs\.m\.taobao\.com\/gw\/mtop\.taobao\.wireless\.home\.splash\.awesome\.get reject-200
+
+# ---------- 首页信息流（已实测，只删广告卡） ----------
+# 广告卡：template.name = fish_home_advertise_card_d4，clickParam.args.idle_ad_type = xy_adx_performance
+^https:\/\/g?-?acs\.m\.goofish\.com\/gw\/mtop\.taobao\.idlehome\.home\.nextfresh\/ response-body-json-jq 'if (.data.sections | type) == "array" then .data.sections |= map(select(((.template.name // "") | test("advertise") | not) and ((.data.clickParam.args.idle_ad_type // "") == ""))) else . end'
+
+# ---------- 广告曝光与归因上报（已实测） ----------
+^https:\/\/g?-?acs\.m\.goofish\.com\/gw\/mtop\.idle\.(?:ad\.expose|idleadv\.)[^\/]*\/ reject-dict
+
+[MITM]
+hostname = acs.m.goofish.com, g-acs.m.goofish.com, guide-acs.m.taobao.com

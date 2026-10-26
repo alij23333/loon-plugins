@@ -1,5 +1,5 @@
 #!name=闲鱼去广告
-#!desc=基于 2026-10-20 闲鱼 7.28.50 实测抓包：拦截开屏广告（实时 + 预下载素材），删除首页信息流里的效果广告卡，屏蔽广告曝光与归因上报。只删广告，不动首页商品、搜索、同城、详情页等正常内容。需开启 MITM 并信任证书。
+#!desc=基于 2026-10-20 闲鱼 7.28.50 实测抓包：拦截开屏广告（实时 + 预下载素材），删除首页信息流里的效果广告卡，屏蔽广告曝光与归因上报。只删广告，不动首页商品、搜索、同城、详情页等正常内容。需开启 MITM 并信任证书。开屏素材会提前缓存好几天，装插件前已缓存的开屏可能还会出现，想立刻清掉需删除重装闲鱼（重装后先确认插件已开启再打开）。
 #!tag=去广告
 #!system=ios
 
@@ -7,6 +7,13 @@
 # ---------- 强制走 TCP（QUIC 无法 MITM） ----------
 AND,((DOMAIN-SUFFIX,goofish.com),(PROTOCOL,QUIC)),REJECT
 AND,((DOMAIN,guide-acs.m.taobao.com),(PROTOCOL,QUIC)),REJECT
+
+# ---------- 阿里调度服务器 amdc ----------
+# App 启动时从 amdc 拿连接策略（私有长连接协议 / 直连 IP），拿到后 mtop 请求可能绕过 MITM，
+# 导致下面的改写规则不生效、开屏照出。拦掉后 App 回落到普通 HTTPS。
+DOMAIN,amdc.m.taobao.com,REJECT
+DOMAIN,amdc.alipay.com,REJECT
+DOMAIN-KEYWORD,amdc-thirdparty,REJECT
 
 # ---------- 阿里妈妈广告监测（开屏广告来源 mamaAd） ----------
 DOMAIN-SUFFIX,tanx.com,REJECT
